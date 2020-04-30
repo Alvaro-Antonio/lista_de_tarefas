@@ -18,9 +18,20 @@ class _Home extends StatefulWidget {
 
 class __HomeState extends State<_Home> {
   List _toDoList = [];
-  final _toDoController =  TextEditingController(); //pega o valor do input
 
-  void _addToDo(){
+  @override
+  void initState() {
+    super.initState();
+    _readData().then((data) {
+      setState(() {
+        _toDoList = json.decode(data);
+      });
+    });
+  }
+
+  final _toDoController = TextEditingController(); //pega o valor do input
+
+  void _addToDo() {
     setState(() {
       Map<String, dynamic> newToDO = Map();
       newToDO["title"] = _toDoController.text;
@@ -28,6 +39,7 @@ class __HomeState extends State<_Home> {
       newToDO["ok"] = false;
 
       _toDoList.add(newToDO);
+      _saveData();
     });
   }
 
@@ -69,21 +81,7 @@ class __HomeState extends State<_Home> {
             child: ListView.builder(
               padding: EdgeInsets.only(top: 10.0),
               itemCount: _toDoList.length,
-              itemBuilder: (context, index) {
-                return CheckboxListTile(
-                  title: Text(_toDoList[index]["title"]),
-                  value: _toDoList[index]["ok"],
-                  onChanged: (c){ //recebe um parametro bool
-                    setState(() {
-                      _toDoList[index]["ok"] = c;
-                    });
-                  },
-                  secondary: CircleAvatar(
-                    child: Icon(
-                        _toDoList[index]["ok"] ? Icons.check : Icons.error),
-                  ),
-                );
-              },
+              itemBuilder: buildItem,
             ),
           ),
         ],
@@ -91,6 +89,35 @@ class __HomeState extends State<_Home> {
     );
   }
 
+  Widget buildItem(context, index) { //contrói itens, anteriormente era uma função anônima
+    return Dismissible(
+      key: Key(DateTime.now().millisecondsSinceEpoch.toString()),
+      background: Container(
+        color: Colors.red,
+        child: Align(
+          alignment: Alignment(-0.9, 0.0),
+          child: Icon(Icons.delete, color: Colors.white,),
+        ),
+      ),
+      direction: DismissDirection.startToEnd,
+      child: CheckboxListTile(
+        title: Text(_toDoList[index]["title"]),
+        value: _toDoList[index]["ok"],
+        onChanged: (c) {
+          //recebe um parametro bool
+          setState(() {
+            _toDoList[index]["ok"] = c;
+            _saveData();
+          });
+        },
+        secondary: CircleAvatar(
+          child: Icon(_toDoList[index]["ok"] ? Icons.check : Icons.error),
+        ),
+      ),
+    );
+  }
+
+  /**/
   /* Funções de leitura de arquivos*/
   Future<File> _getFile() async {
     final directory = await getApplicationDocumentsDirectory();
