@@ -46,6 +46,19 @@ class __HomeState extends State<_Home> {
     });
   }
 
+  Future<Null> _refresh() async{ //função para ordenar tarefas
+    await Future.delayed(Duration(seconds: 1));
+    setState(() {
+      _toDoList.sort((a,b){
+        if(a["ok"] && !b["ok"]) return 1;
+        else if(a["ok"] && b["ok"]) return -1;
+        else return 0;
+      });
+    });
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,11 +94,13 @@ class __HomeState extends State<_Home> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.only(top: 10.0),
-              itemCount: _toDoList.length,
-              itemBuilder: buildItem,
-            ),
+            child: RefreshIndicator(
+                child: ListView.builder(
+                  padding: EdgeInsets.only(top: 10.0),
+                  itemCount: _toDoList.length,
+                  itemBuilder: buildItem,
+    ),
+                onRefresh: _refresh),
           ),
         ],
       ),
