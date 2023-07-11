@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:listadetarefas/models/ToDo.dart';
+import 'package:listadetarefas/repositories/todo_repositorie.dart';
 import 'package:listadetarefas/widgets/todo_list_item.dart';
 
 class TodoListPage extends StatefulWidget {
-  TodoListPage({super.key});
+  const TodoListPage({super.key});
 
   @override
   State<TodoListPage> createState() => _TodoListPageState();
@@ -13,8 +14,21 @@ class _TodoListPageState extends State<TodoListPage> {
   List<ToDo> tasks = [];
   ToDo? deletedTodo;
   int? deletedTodoPos;
+  String? errorText;
+
+  @override
+  void initState() {
+    super.initState();
+
+    todoRepositorie.getTodoList().then((value) {
+      setState(() {
+        tasks = value;
+      });
+    });
+  }
 
   final TextEditingController controllerTask = TextEditingController();
+  final TodoRepositorie todoRepositorie = TodoRepositorie();
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +46,16 @@ class _TodoListPageState extends State<TodoListPage> {
                       flex: 3,
                       child: TextField(
                         controller: controllerTask,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
                           labelText: 'Adicione uma tarefa',
                           hintText: 'Arrumar a garagem',
+                          errorText: errorText,
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.blueAccent,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -49,14 +69,23 @@ class _TodoListPageState extends State<TodoListPage> {
                           date: DateTime.now(),
                         );
 
+                        if (newDoto.title.isEmpty) {
+                          setState(() {
+                            errorText = 'Campo não pode ser vazio';
+                          });
+                          return;
+                        }
+
                         setState(() {
                           tasks.add(newDoto);
+                          errorText = null;
                         });
                         controllerTask.clear();
+                        todoRepositorie.saveTodoList(tasks);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(14),
                       ),
                       child: const Icon(
                         Icons.add,
@@ -78,23 +107,23 @@ class _TodoListPageState extends State<TodoListPage> {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child:
                           Text('Você possui ${tasks.length} tarefas pendentes'),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 8,
                     ),
                     ElevatedButton(
                       onPressed: showDeleteAllConfirmationDialog,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(14),
                       ),
-                      child: Text('Limpar tudo.'),
+                      child: const Text('Limpar tudo.'),
                     )
                   ],
                 ),
@@ -113,6 +142,7 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       tasks.remove(todo);
     });
+    todoRepositorie.saveTodoList(tasks);
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -128,6 +158,7 @@ class _TodoListPageState extends State<TodoListPage> {
             setState(() {
               tasks.insert(deletedTodoPos!, deletedTodo!);
             });
+            todoRepositorie.saveTodoList(tasks);
           },
         ),
       ),
@@ -179,5 +210,6 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       tasks.clear();
     });
+    todoRepositorie.saveTodoList(tasks);
   }
 }
